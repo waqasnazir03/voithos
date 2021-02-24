@@ -144,7 +144,7 @@ steps are optional, but help to leave the system pristine.
 
 ```ps1
 try{
-  Unblock-File "C:\Program Files\WindowsPowershell\Modules\Voithos\voithos.psm1"
+  Unblock-File "C:\Windows\System32\WindowsPowerShell\v1.0\Modules\Voithos\voithos.psm1"
 } catch {
   Write-Host "WARNING: Unblock-file failed"
 }
@@ -183,8 +183,7 @@ Reset-GPOConfig
 
 # Remove the Voithos PowerShell module
 Remove-Module Voithos
-Remove-Item -Recurse -Force -Confirm:$False -ErrorAction Ignore "C:\Program Files (x86)\WindowsPowerShell\Modules\Voithos"
-Remove-Item -Recurse -Force -Confirm:$False -ErrorAction Ignore "C:\Program Files\WindowsPowerShell\Modules\Voithos"
+Remove-Item -Recurse -Force -Confirm:$False -ErrorAction Ignore "C:\Windows\System32\WindowsPowerShell\v1.0\Modules\Voithos"
 
 
 # Remove the directory the GPOs got backed up to
