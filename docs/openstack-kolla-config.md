@@ -377,8 +377,10 @@ group_member_attribute = member
 group_desc_attribute = description
 
 # In big domains with nested OUs you may also need:
+chase_referrals = false
 query_scope = sub
-page_size = 0
+page_size = 999
+pool_size=100
 
 # debug levels of 0,255, and 4095 are common, with 4095 the most verbose
 debug_level = 0
