@@ -236,3 +236,16 @@ swapoff -a; swapon -a
 ```
 
 
+## Set Filter Excluding Guest Volumes
+Note: These configs are required for cloud using iscsi based storage.
+In order for iscsi to only activate boot disk related volumes and not the volumes that are intended
+for guest VMs, add a filter for it in `/etc/lvm/lvm.conf`.
+First check PV for boot disk.
+```bash
+pvdisplay | grep "PV Name"
+```
+If it's `/dev/sdX1`, open `/etc/lvm/lvm.conf` and add this filter in `devices` section.
+```
+filter = [ "a|^/dev/sdX[1-9]$|", "r|^/dev/*|" ]
+```
+Now reboot the server.
