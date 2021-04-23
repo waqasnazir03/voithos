@@ -1,7 +1,7 @@
 [> Back to migration procedure](/vmware-migration.html)
 
 
-# Voithos Migrations: Required VMware permissions
+# Voithos Migrations: Required VMware Permissions
 
 ## Define Service Account
 
@@ -23,4 +23,4 @@ and assign it the new role. The easiest configuration here is to select
 `Propogate to Children`.
 
 If granting access to the entire datacenter is not appropriate, ensure that all hosts,
-datastores, virtual networksm distributed switches, etc grant access to the service account.
+datastores, virtual networks, distributed switches, etc grant access to the service account.
