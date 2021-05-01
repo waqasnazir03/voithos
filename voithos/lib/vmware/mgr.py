@@ -25,7 +25,7 @@ def _environ(name, value=None):
 
 
 def _get_ssl_error():
-    """ Different versions of Python (3.6 vs 3.8) throw different SSL exceptions """
+    """Different versions of Python (3.6 vs 3.8) throw different SSL exceptions"""
     if hasattr(ssl, "SSLCertVerificationError"):
         return ssl.SSLCertVerificationError
     else:
@@ -33,10 +33,10 @@ def _get_ssl_error():
 
 
 class VMWareMgr:
-    """ Object used to manage VMWare interactions """
+    """Object used to manage VMWare interactions"""
 
     def __init__(self, username=None, password=None, ip_addr=None):
-        """ Constructor the exporter, loading creds from env vars if needed """
+        """Constructor the exporter, loading creds from env vars if needed"""
         self.username = _environ("VMWARE_USERNAME", username)
         self.password = _environ("VMWARE_PASSWORD", password)
         self.ip_addr = _environ("VMWARE_IP_ADDR", ip_addr)
@@ -48,11 +48,11 @@ class VMWareMgr:
     conn = None  # Required for __del__
 
     def __del__(self):
-        """ Clean up the conenction when the object is GC'd """
+        """Clean up the conenction when the object is GC'd"""
         connect.Disconnect(self.conn)
 
     def connect(self):
-        """ Connect to the configured VMWare service & set self.conn """
+        """Connect to the configured VMWare service & set self.conn"""
         try:
             SSLVerificationError = _get_ssl_error()
             try:
@@ -108,5 +108,12 @@ class VMWareMgr:
         return (vm for vm in self.vms if any(name in vm.name for name in names))
 
     def find_vm_by_uuid(self, uuid):
-        """ Return a single VM with a given UUID, or None """
-        return next((vm for vm in self.vms if vm.config.uuid == uuid), None)
+        """Return a single VM with a given UUID, or None"""
+        return next(
+            (
+                vm
+                for vm in self.vms
+                if hasattr(vm, "config") and vm.config and vm.config.uuid == uuid
+            ),
+            None,
+        )
