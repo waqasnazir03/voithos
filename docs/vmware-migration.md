@@ -4,7 +4,7 @@ The `voithos vmware` commands leverage VMware's powerful Python libraries to hel
 export VMs to other platforms. The process of exporting a VM from VMware to OpenStack is as
 follows:
 
-1. [Configure a VMware service account with the correct permissions](/migration/vmware-permissions.html)
+1. [Configure a VMware service account with the correct permissions](/migrations/vmware-permissions.html)
 1. Create worker VMs: An Ubuntu worker is always needed. For Windows, a Windows Server is too.
     1. [Creating a Linux migration worker](/migrations/linux-worker.html)
     1. [Creating a Windows migration worker](/migrations/windows-worker.html)
