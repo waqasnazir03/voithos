@@ -8,5 +8,6 @@ dist/
 breqwatr_deployment_tool.egg-info/
 .tox/
 .coverage
+.idea/
 ceph-deploy-ceph.log
 *.vmdk

@@ -47,6 +47,16 @@ snapshot restores.
 
 - [**Integrate Arcus with Ceph**](/arcus-ceph-integration.html)
 
+## Octavia Post-deployment
+
+Follow octavia's post-deployment procedure if octavia is enabled and any one of these is true:
+1. openstack release is older than wallaby.
+2. openstack release is wallaby or newer but `octavia_auto_configure` is `no` in globals file.
+- [**Octavia Post-deployment Steps**](/openstack-octavia-post-deployment.html)
+
+## Create Octavia Amphora
+This is required for creating loadbalancers.
+- [**Octavia Amphora Create**](/openstack-octavia-amphora.html)
 
 ## Monitoring
 

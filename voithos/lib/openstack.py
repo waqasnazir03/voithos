@@ -24,6 +24,8 @@ SUPPORTED_IMAGES = [
     "windows2012",
     "windows2016",
     "windows2019",
+    "amphora-train",
+    "amphora-wallaby",
 ]
 
 

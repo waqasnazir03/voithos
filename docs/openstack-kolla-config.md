@@ -315,6 +315,21 @@ Often our users upload HUGE glance images. Extending the token timeout helps wit
 expiration = 7200
 ```
 
+## config/octavia.conf
+These configs are required for creating loadbalancers using bootable volumes.
+```yaml
+[controller_worker]
+volume_driver = volume_cinder_driver
+
+[cinder]
+region_name = RegionOne
+endpoint_type = internal
+# Size of bootable volume to create loadbalancer. 2 will work
+volume_size = <volume-size>
+# It's fine if this volume type hasn't been created yet.
+volume_type = <volume-type-name>
+```
+
 
 ### LDAP Configuration
 

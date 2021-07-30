@@ -264,3 +264,61 @@ elasticsearch_curator_hard_retention_period_days: 15
 Older checkouts of kolla-ansible stable/train weren't supporting elasticsearch curator.
 If you are installing elasticsearch curator on an existing cloud, please ensure that
 elasticsearch curator hosts are defined in inventory in next step.
+
+## Octavia
+Octavia service allows openstack to deploy load balancers.
+```yaml
+# "enable_neutron_provider_networks" should be yes if enabling octavia. In neutron configs
+# section of globals file, check if it's enabled or not.
+enable_octavia: "yes"
+# octavia_network_interface is the control node interface on which an ip address is configured
+# which either belongs to or accessible from loadbalancer management network.
+octavia_network_interface: "<network_interface>"
+# By default it picks admin for train or earlier release. Newer releases use service project.
+# Upgrade may fail because of that. So, it's better to configure "service" as octavia auth project.
+octavia_service_auth_project: "service"
+```
+### Octavia Certificates
+Octavia deployment requires amphora certificates. Follow these steps to generate those certs.
+- [**Octavia Certificates**](/openstack-octavia-certs.html)
+
+In releases earlier than wallaby, there are some steps that need to be performed after cloud deployment.
+These steps include creation of workloads that are required by octavia to create loadbalancers.
+
+
+- [**Octavia Post-deployment Steps (Optional)**](/openstack-octavia-post-deployment.html)
+  **Note**: Steps mentioned in this link will be performed after deployment.
+  This link can be seen after the kolla-ansible deployment steps.
+
+Above mentioned procedure for manually creating workloads works for openstack wallaby as well,
+but it requires this configuration in globals file
+```yaml
+octavia_auto_configure: no
+```
+It can also be automated in wallaby by putting these configs in globals file. This way,
+reconfiguration isn't required after deployment.
+```yaml
+octavia_amp_flavor:
+  name: "amphora"
+  is_public: no
+  vcpus: 1
+  ram: 1024
+  disk: 0
+octavia_amp_network:
+  name: ext-net
+  provider_network_type: vlan
+  provider_segmentation_id: 106
+  provider_physical_network: physnet1
+  external: yes
+  shared: yes
+  subnet:
+    name: ext-subnet
+    cidr: "10.106.0.0/16"
+    allocation_pool_start: "10.106.249.1"
+    allocation_pool_end: "10.106.249.254"
+    gateway_ip: "10.106.0.1"
+    enable_dhcp: yes
+# Change the subnet info according to your own subnet.
+# octavia_network_interface's ip address should either belongs to octavia_amp_network's subnet or
+#  accessible from octavia_amp_network's subnet.
+```
