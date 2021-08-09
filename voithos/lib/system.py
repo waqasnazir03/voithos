@@ -88,6 +88,14 @@ def assert_path_exists(file_path):
         sys.stderr.write(err)
         sys.exit(11)
 
+def assert_path_does_not_exist(file_path):
+    """ Gracefully exit if a file already exists """
+    path = pathlib.Path(get_absolute_path(file_path))
+    if path.exists():
+        err = f"ERROR: {file_path} already exists\n"
+        sys.stderr.write(err)
+        sys.exit(11)
+
 
 class FailedMount(Exception):
     """ A mount operation has failed """

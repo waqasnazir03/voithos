@@ -114,3 +114,22 @@ KOLLA_IMAGE_REPOS["train"].extend(
         "ubuntu-source-grafana",
     ]
 )
+
+# USSURI RELEASE
+KOLLA_IMAGE_REPOS["ussuri"] = list(KOLLA_IMAGE_REPOS["train"])
+KOLLA_IMAGE_REPOS["ussuri"].extend(
+    [
+        "ubuntu-source-mariadb-server",
+        "ubuntu-source-mariadb-clustercheck",
+    ]
+)
+# VICTORIA RELEASE
+KOLLA_IMAGE_REPOS["victoria"] = list(KOLLA_IMAGE_REPOS["ussuri"])
+
+# WALLABY RELEASE
+KOLLA_IMAGE_REPOS["wallaby"] = list(KOLLA_IMAGE_REPOS["victoria"])
+# Add prometheus-v2-server
+KOLLA_IMAGE_REPOS["wallaby"].append("ubuntu-source-prometheus-v2-server")
+# ubuntu-source-mariadb is removed in wallaby
+KOLLA_IMAGE_REPOS["wallaby"].remove("ubuntu-source-mariadb")
+

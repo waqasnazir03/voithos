@@ -6,7 +6,7 @@ from click import echo
 import voithos.lib.aws.s3 as s3
 import voithos.lib.aws.ecr as ecr
 import voithos.lib.config as config
-from voithos.lib.system import shell, error, assert_path_exists
+from voithos.lib.system import shell, error, assert_path_exists, assert_path_does_not_exist
 from voithos.lib.docker import volume_opt
 from voithos.constants import KOLLA_IMAGE_REPOS
 from gnocchiclient.v1 import client as gnocchi
@@ -42,10 +42,28 @@ def kolla_ansible_genpwd(release):
     )
     shell(cmd)
 
+def kolla_ansible_merge_passwords(passwords_file, new_release):
+    """ Generate passwords file by merging old passwords to
+        a newer release password file.
+    """
+    cwd = os.getcwd()
+    new_passwords_path = "/var/repos/kolla-ansible/etc/kolla/passwords.yml"
+    old_passwords_path = "/var/repos/kolla-ansible/etc/kolla/old-passwords.yml"
+    old_password_vol = volume_opt(passwords_file, f"{old_passwords_path}")
+    cmd = (
+        f"docker run --rm {old_password_vol} "
+        f"-v {cwd}:/etc/kolla "
+        f"breqwatr/kolla-ansible:{new_release} "
+        f'bash -c "kolla-genpwd --passwords {new_passwords_path} && '
+        f'kolla-mergepwd --old {old_passwords_path} --new {new_passwords_path} '
+        f'--final /etc/kolla/{new_release}-passwords.yml"'
+    )
+    shell(cmd)
 
 def kolla_ansible_inventory(release):
     """ Print the inventory template for the given release """
     cwd = os.getcwd()
+    assert_path_does_not_exist(cwd+"/inventory")
     inventory_file = "/var/repos/kolla-ansible/ansible/inventory/multinode"
     cmd = (
         f"docker run --rm "
@@ -73,6 +91,7 @@ def kolla_ansible_generate_certificates(release, passwords_path, globals_path):
 def kolla_ansible_globals(release):
     """ Genereate certificates directory """
     cwd = os.getcwd()
+    assert_path_does_not_exist(cwd+"/globals.yml")
     cmd = (
         f"docker run --rm -v {cwd}:/temp-dir "
         f"breqwatr/kolla-ansible:{release} "
