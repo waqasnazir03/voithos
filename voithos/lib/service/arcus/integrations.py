@@ -31,6 +31,9 @@ def list_integrations(api_addr, username, password):
     """ List the current integrations """
     headers = api.get_http_auth_headers(username, password, api_addr)
     resp = requests.get(f"{api_addr}/integrations", headers=headers, verify=False)
+    if resp.status_code != 200:
+        msg = f"Failed to list integrations - {resp.status_code}: {resp.content}"
+        error(msg, exit=True)
     return resp.json()["integrations"]
 
 
