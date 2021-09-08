@@ -171,8 +171,11 @@ def set_service_account(auth_url, username, password, api_url):
         print("Updating existing SA record.")
         intg_id = sa_intg["id"]
         sa_data["id"] = intg_id
+        sa_data["links"] = sa_intg["links"]
         patch_url = f"{intgs_url}/{intg_id}"
-        requests.patch(patch_url, headers=headers, json=sa_data, verify=False)
+        resp = requests.patch(patch_url, headers=headers, json=sa_data, verify=False)
+        if resp.status_code != 200:
+            error(f"ERROR:Failed to update SA - {resp.content.decode()}", exit=True)
         return
     print("No SA record found. Inserting new one.")
     requests.post(intgs_url, headers=headers, json=sa_data, verify=False)
