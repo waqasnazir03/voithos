@@ -268,3 +268,14 @@ Arcus works best when a custom volume type is defined (instead of using `__DEFAU
 ```bash
 openstack volume type create --public --property volume_backend_name='<backend-name>' <name>
 ```
+
+
+---
+
+
+## Enable the Breqwatr Kubernetes Service (BKS)
+
+BKS requires that a Cluster-API environment be deployed and a kubeconfig for a parent CAPI cluster
+be available before it can be launched. Find the full instructions here:
+
+[See the installation instructions](/bks-setup.html)

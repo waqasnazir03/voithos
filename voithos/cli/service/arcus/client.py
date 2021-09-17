@@ -88,7 +88,7 @@ def get_client_group():
 
     @click.group(name="client")
     def client_group():
-        """ Arcus HTTP API service """
+        """ Arcus Web-Client service """
 
     client_group.add_command(pull)
     client_group.add_command(start)

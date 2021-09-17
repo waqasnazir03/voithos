@@ -3,6 +3,7 @@
 import click
 
 import voithos.cli.service.arcus.api as api
+import voithos.cli.service.arcus.capi as capi
 import voithos.cli.service.arcus.client as client
 import voithos.cli.service.arcus.mgr as mgr
 
@@ -15,6 +16,7 @@ def get_arcus_group():
         """ Arcus services """
 
     arcus_group.add_command(api.get_api_group())
+    arcus_group.add_command(capi.get_capi_group())
     arcus_group.add_command(client.get_client_group())
     arcus_group.add_command(mgr.get_mgr_group())
     return arcus_group

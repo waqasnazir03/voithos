@@ -20,12 +20,14 @@ SUPPORTED_IMAGES = [
     "rhel-7.8",
     "rhel-8.2",
     "ubuntu1804",
+    "ubuntu2004",
     "windows10",
     "windows2012",
     "windows2016",
     "windows2019",
     "amphora-train",
     "amphora-wallaby",
+    "capi-kube-v1.20.9",
 ]
 
 
