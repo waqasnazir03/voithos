@@ -122,7 +122,6 @@ spec:
         kind: Secret
         name: bks-cloud-config
       flavor: ${OPENSTACK_NODE_MACHINE_FLAVOR}
-      # image: ${OPENSTACK_IMAGE_NAME}  # NOTE(Kyle) - I don't think we need this any more
       sshKeyName: CapiKey
 
 ---
@@ -171,7 +170,6 @@ spec:
         kind: Secret
         name: bks-cloud-config
       flavor: ${OPENSTACK_NODE_MACHINE_FLAVOR}
-      # image: ${OPENSTACK_IMAGE_NAME}
       sshKeyName: CapiKey
 
 ---
