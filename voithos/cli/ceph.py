@@ -54,7 +54,7 @@ def zap_disk(disk, force):
 )
 @click.option("--inventory", "-i", required=True, help="Ceph-Ansible inventory file path")
 @click.option(
-    "--ssh-key", "-s", "ssh_key", required=True, help="Ceph-Ansible grou_vars directory path",
+    "--ssh-key", "-s", "ssh_key", required=True, help="SSH private key path",
 )
 @click.option(
     "--verbose/--no-verbose", default=False, help="Run ansible-playbook with -vvvv",
