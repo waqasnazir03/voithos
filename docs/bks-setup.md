@@ -298,6 +298,18 @@ export OS_AUTH_PLUGIN=password
 export OS_CACERT=/etc/kolla/certificates/haproxy-ca.crt
 ```
 
+### [Optional] Deploy the CA Certificate
+
+When you use a self-signed cert and don't pass the CA certificate file along to Cluster-API, you
+will encounter a problem where the first control node spawns but can't start Kubelet, causing the
+remainder of the automation to fail. To allow Kubernetes's OpenStack cloud provider to trust the
+OpenStack cloud, you must copy the CA cert file to each control node.
+
+By convention, create the file as `/etc/certs/cacert`.
+
+```
+scp haproxy-ca.crt root@<node>:/etc/certs/cacert
+```
 
 ### Launch Arcus-CAPI service
 
@@ -305,6 +317,8 @@ Launch the CAPI service on each control node:
 
 ```
 voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig
+# or if using a self-signed cert
+voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig --cacert /etc/certs/cacert
 # Verify
 docker logs arcus_capi
 curl localhost:8888

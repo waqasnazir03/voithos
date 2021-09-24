@@ -17,18 +17,21 @@ def pull(release):
 @click.option("--release", "-r", required=True, help="Version of Arcus CAPI to run")
 @click.option("--kubeconfig", "-k", required=True, help="Path to kubeconfig file")
 @click.option("--openrc", "-o", required=True, help="Path to OpenStack openrc file")
+@click.option("--cacert", required=False, help="Optional path to CA certificate file")
 @click.command(name="start")
 def start(
     release,
     kubeconfig,
-    openrc
+    openrc,
+    cacert
 ):
     """ Launch the arcus-capi service """
     click.echo("starting arcus capi")
     arcus_capi.start(
         release=release,
         kubeconfig_path=kubeconfig,
-        openrc_path=openrc
+        openrc_path=openrc,
+        cacert=cacert
     )
 
 
