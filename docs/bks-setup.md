@@ -103,166 +103,53 @@ While you're here, show the public endpoint for keystone to use in the next step
 openstack endpoint list  --service keystone --interface public -c URL -f value
 ```
 
-### Create cloud config file
 
-Back on the `bootstrap-bks` server, create `/etc/openstack/clouds.yaml` for the
-`bks-service-account` user.
+### Enable remote access to Kind cluster
 
-```
-mkdir -p /etc/openstack
-vi /etc/openstack/clouds.yaml
-```
+The Kind cluster is temporary and not secure, but it can be used to power BKS until BKS builds its
+own cluster.
 
-- Fill in the `auth_url` with the public keystone endpoint URL.
-- Enter your own password
-
-Also ensure you can curl the value of `auth_url`. If not, the networking needs to be fixed.
-Note that changes to /etc/hosts will not replicate into CAPI - DNS itself needs to be configured
-correctly.
+SSH into the Kind server with a terminal session you can leave open. Kind is only really meant to
+be used locally, so the kube-api port listening on `127.0.0.1` needs to be forwarded to `0.0.0.0`.
 
 ```
----
-clouds:
-  breqwatr:
-    interface: public
-    verify: false
-    auth:
-      auth_url: <ENTER YOUR OWN VALUE>
-      user_domain_name: Default
-      project_domain_name: Default
-      project_name: breqwatr
-      username: bks-service-account
-      password: <ENTER YOUR OWN VALUE>
-    region_name: RegionOne
+socat tcp-l:443,fork,reuseaddr tcp:127.0.0.1:38866
 ```
 
+The terminal will block. Just leave it open. You can now curl to your Kind cluster's floating IP
+address on https: `curl -k https://<floating ip>`. You should get a 403 Forbidden response.
 
-Verify that the config file is valid:
-```
-openstack --os-cloud breqwatr server list
-```
+Next, download the `~/.kube/config` kubeconfig file to your workstation. It needs to end up on each
+control node, but edit it first to change the kube-API IP address to the floating IP and to disable
+the TLS warnings.
 
-### Set environment variables
+`vi config`
 
-The `/tmp/env.rc` script that was installed in the `setup-kind.sh` script can export some values
-from the above clouds.yaml file. Set these values on the `bootstrap-bks` server.
-
-```
-source /tmp/env.rc /etc/openstack/clouds.yaml breqwatr
-```
-
-Some values need to be entered manually:
-- `OPENSTACK_IMAGE_ID`
-- `OPENSTACK_NODE_MACHINE_FLAVOR` - Note this is the name, not the ID
-- `OPENSTACK_EXTERNAL_NETWORK_ID`
-- `DNS_ADDRESS` - A DNS address that resolves OpenStack's FQDN to an accessible IP
-
-Collect these values from your OpenStack CLI to use here.
+Remove the `certificate-authority-data` value. Replace the `server:` value with
+`https://<floating ip>`. Also add `insecure-skip-tls-verify: true`.
+Example:
 
 ```
-export OPENSTACK_IMAGE_ID=
-export OPENSTACK_NODE_MACHINE_FLAVOR=
-export OPENSTACK_EXTERNAL_NETWORK_ID=
-export DNS_ADDRESS=
+- cluster:
+    insecure-skip-tls-verify: true
+        server: https://10.106.250.138
 ```
 
----
+Distribute this kubeconfig file to each control node. You can put it anywhere, by convention we
+place it in `/etc/arcus/capi/kind.kubeconfig`.
 
-## Spawn a long-term BKS CAPI cluster
-
-We have a Kubernetes cluster now, created by `kind`, but it isn't appropriate to use as a
-long-term BKS parent cluster. Instead we should deploy Cluster-API on the `kind` bootstrap cluster
-and use it to create our BKS cluster. We'll then deploy Cluster-API on the BKS cluster itself,
-for Arcus-CAPI to operate.
-
-### Download the BKS CAPI template
-
-```
-wget https://raw.githubusercontent.com/breqwatr/voithos/master/docs/bks-template.yaml
-```
-
-### Render the template
-
-Using the environment variables that were just set, render the template file into a usable format.
-
-```
-clusterctl config cluster --from bks-template.yaml bks > bks.yaml
-```
-
-### Deploy the BKS Capi Cluster
-
-This will create the permanent "parent" CAPI cluster.
-
-```
-kubectl apply -f bks.yaml
-
-# watch the progress: ctrl-c to exist
-pod=$(kubectl get pods -A | grep capo-system | grep capo-controller-manager | awk '{print $2}')
-kubectl logs -f -n capo-system $pod manager
-```
-
-Wait some time for it to finish
-
-### Download the kubeconfig file
-
-```
-cluster_name=bks
-clusterctl get kubeconfig $cluster_name >  $cluster_name.kubeconfig
-```
-
-Save this file to your workstation, too. It will be needed to configure Arcus-CAPI
-
-### Install Calico on the CAPI cluster
-
-```
-kubectl --kubeconfig=./$cluster_name.kubeconfig apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
-```
-
-The cluster is now `Ready`:
-```
-kubectl --kubeconfig=./$cluster_name.kubeconfig get nodes
-```
-
-
-### Install Cluster-API on the BKS cluster
-
-We're now finished with the Kubernetes cluster running on this `Kind` node, but we can re-use
-the clusterctl install here to install Cluster-API on the new node.
-
-
-On the kind-cluster, replace the bootstrap kubeconfig file with the BKS one:
-
-```
-mv ~/.kube/config ~/.kube/kind-config
-cp bks.kubeconfig ~/.kube/config
-# verify
-kubectl get nodes
-```
-
-The `clusterctl` tool uses the default kubeconfig file in `~/.kube/config`. Run it again from the
-kind/bootstrap-cluster to initialize Cluster-API on the BKS cluster.
-
-```
-clusterctl init --infrastructure openstack --core 'cluster-api:v0.4.1' --control-plane 'kubeadm:v0.4.1' --bootstrap 'kubeadm:v0.4.1'
-```
-
-### Decommission the bootstrap/kind cluster
-
-Shut down and delete the bootstrap cluster. Now that the BKS cluster exists, the bootstrap cluster
-is not needed.
-
-
----
-
-
-## Deploy Arcus-CAPI
 
 
 ## Launch the ACAPI service
 
-On each control-node, ensure Voithos is installed, updated, and licensed.
+Arcus-CAPI will operate against the Kind Cluster-API cluster for now. It will then be deleted and
+recreated once a production-quality Cluster-API cluster exists.
+
+
 
 ### Pull the latest Arcus-CAPI image:
+
+On each control-node, ensure Voithos is installed, updated, and licensed.
 
 ```
 voithos service arcus capi pull -r latest
@@ -311,14 +198,17 @@ By convention, create the file as `/etc/certs/cacert`.
 scp haproxy-ca.crt root@<node>:/etc/certs/cacert
 ```
 
-### Launch Arcus-CAPI service
+### Launch Arcus-CAPI service against the Kind cluster
 
-Launch the CAPI service on each control node:
+Launch the CAPI service on each control node. The `--kubeconfig` file you use will point to the
+Kind cluster for now. We'll be deleting this container and relaunching it once we have a new file.
 
 ```
-voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig
-# or if using a self-signed cert
-voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig --cacert /etc/certs/cacert
+
+voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/kind.kubeconfig
+# or if you have a self-signed cert:
+# voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/kind.kubeconfig --cacert /etc/certs/cacert
+
 # Verify
 docker logs arcus_capi
 curl localhost:8888
@@ -358,3 +248,62 @@ voithos service arcus api integrations list -p <password> -u arcusadmin -a http:
 
 With the integration created, Arcus-API will know how to communicate with Arcus-CAPI. Arcus-Client
 will now display the Kubernetes icon in the project accordion.
+
+
+
+## Create the permanent parent cluster
+
+This is the cluster that BKS will use to operate Cluster-API long-term. The Kind cluster can be
+deleted once this procedure is complete.
+
+Open the Arcus web UI and navigate to the `breqwatr` project's Kubernetes page. Create a cluster
+and name it `bks`. The cluster can be small, with either 1 and 1 or 3 and 2 nodes depending on your
+availability requirements.
+
+Once the cluster is created and in the `CNI_REQUIRED` state, you can download the `kubeconfig` file
+from the web UI. Transfer `bks.kubeconfig` to the Kind VM, since it already has `kubectl` and
+`clusterctl` installed.
+
+Validate that the kubeconfig file works from the Kind VM:
+```
+kubectl --kubeconfig bks.kubeconfig get nodes
+```
+
+Make the kubeconfig file your default one:
+```
+mv ~/.kube/config ~/.kube/kind-config
+cp bks.kubeconfig ~/.kube/config
+kubectl get nodes
+```
+
+### Install Cluster-API on the new cluster:
+
+The `clusterctl` tool uses the default kubeconfig file in `~/.kube/config`. Run it again from the
+kind/bootstrap-cluster to initialize Cluster-API on the BKS cluster.
+
+```
+clusterctl init --infrastructure openstack --core 'cluster-api:v0.4.1' --control-plane 'kubeadm:v0.4.1' --bootstrap 'kubeadm:v0.4.1'
+```
+
+
+## Redeploy Arcus-CAPI on the new cluster
+
+Place the same `bks.kubeconfig` file on the control nodes in `/etc/arcus/capi/bks.kubeconfig`.
+Delete the current Arcus-CAPI service from the control nodes and redeploy it using the new
+`etc/arcus/capi/bks.kubeconfig` file.
+
+```
+docker rm -f arcus_capi
+voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig
+# or if you have a self-signed cert:
+# voithos service arcus capi start -r latest --openrc /etc/arcus/capi/openrc.sh --kubeconfig /etc/arcus/capi/bks.kubeconfig --cacert /etc/certs/cacert
+```
+
+
+### Decommission the bootstrap/kind cluster
+
+Shut down and delete the bootstrap cluster. Now that the BKS cluster exists, the bootstrap cluster
+is not needed.
+
+
+
