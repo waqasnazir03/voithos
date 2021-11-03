@@ -21,6 +21,7 @@ SUPPORTED_IMAGES = [
     "rhel-8.2",
     "ubuntu1804",
     "ubuntu2004",
+    "ubuntu-desktop2004",
     "windows10",
     "windows2012",
     "windows2016",
