@@ -44,10 +44,10 @@ Follow octavia's post-deployment procedure if octavia is enabled and any one of 
 2. openstack release is wallaby or newer but `octavia_auto_configure` is `no` in globals file.
 - [**Octavia Post-deployment Steps**](/openstack-octavia-post-deployment.html)
 
-## Create Octavia Amphora
+## Octavia Overcloud Changes
 This is required for creating loadbalancers.
 - [**Octavia Amphora Create**](/openstack-octavia-amphora.html)
-
+- [**Service Project Quotas**](/openstack-octavia-service-project-quotas.html)
 
 ## Monitoring
 
