@@ -15,6 +15,8 @@ from keystoneauth1.identity import v3
 
 
 SUPPORTED_IMAGES = [
+    "centos7",
+    "centos8",
     "cirros",
     "rhel-6.10",
     "rhel-7.8",
