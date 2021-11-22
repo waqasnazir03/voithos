@@ -1,0 +1,215 @@
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: Cluster
+metadata:
+  name: bks
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    serviceDomain: cluster.local
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+    kind: KubeadmControlPlane
+    name: bks-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: OpenStackCluster
+    name: bks
+
+---
+
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: OpenStackCluster
+metadata:
+  name: bks
+  namespace: default
+spec:
+  externalNetworkId: ${OPENSTACK_EXTERNAL_NETWORK_ID}
+  cloudName: breqwatr
+  identityRef:
+    kind: Secret
+    name: bks-cloud-config
+  dnsNameservers:
+  - ${DNS_ADDRESS}
+  managedAPIServerLoadBalancer: true
+  managedSecurityGroups: true
+  nodeCidr: 10.6.0.0/24
+  useOctavia: true
+
+---
+
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+kind: KubeadmControlPlane
+metadata:
+  name: bks-control-plane
+  namespace: default
+spec:
+  replicas: 1
+  version: v1.20.9
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      kind: OpenStackMachineTemplate
+      name: bks-control-plane
+  kubeadmConfigSpec:
+    useExperimentalRetryJoin: true
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-config: /etc/kubernetes/cloud.conf
+          cloud-provider: openstack
+        extraVolumes:
+        - hostPath: /etc/kubernetes/cloud.conf
+          mountPath: /etc/kubernetes/cloud.conf
+          name: cloud
+          readOnly: true
+      controllerManager:
+        extraArgs:
+          cloud-config: /etc/kubernetes/cloud.conf
+          cloud-provider: openstack
+        extraVolumes:
+        - hostPath: /etc/kubernetes/cloud.conf
+          mountPath: /etc/kubernetes/cloud.conf
+          name: cloud
+          readOnly: true
+        - hostPath: /etc/certs/cacert
+          mountPath: /etc/certs/cacert
+          name: cacerts
+          readOnly: true
+      imageRepository: k8s.gcr.io
+    files:
+    - content: ${OPENSTACK_CLOUD_PROVIDER_CONF_B64}
+      encoding: base64
+      owner: root
+      path: /etc/kubernetes/cloud.conf
+      permissions: "0600"
+    - content: Cg==
+      encoding: base64
+      owner: root
+      path: /etc/certs/cacert
+      permissions: "0600"
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/cloud.conf
+          cloud-provider: openstack
+        name: '{{ local_hostname }}'
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-config: /etc/kubernetes/cloud.conf
+          cloud-provider: openstack
+        name: '{{ local_hostname }}'
+
+---
+
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: OpenStackMachineTemplate
+metadata:
+  name: bks-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      rootVolume:
+        diskSize: 30
+        sourceType: "image"
+        sourceUUID: ${OPENSTACK_IMAGE_ID}
+      cloudName: breqwatr
+      identityRef:
+        kind: Secret
+        name: bks-cloud-config
+      flavor: ${OPENSTACK_NODE_MACHINE_FLAVOR}
+      sshKeyName: CapiKey
+
+---
+
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachineDeployment
+metadata:
+  name: bks-worker
+  namespace: default
+spec:
+  clusterName: bks
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          kind: KubeadmConfigTemplate
+          name: bks-worker
+      clusterName: bks
+      failureDomain: nova
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: OpenStackMachineTemplate
+        name: bks-worker
+      version: v1.20.9
+
+---
+
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+kind: OpenStackMachineTemplate
+metadata:
+  name: bks-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      rootVolume:
+        diskSize: 30
+        sourceType: "image"
+        sourceUUID: ${OPENSTACK_IMAGE_ID}
+      cloudName: breqwatr
+      identityRef:
+        kind: Secret
+        name: bks-cloud-config
+      flavor: ${OPENSTACK_NODE_MACHINE_FLAVOR}
+      sshKeyName: CapiKey
+
+---
+
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+kind: KubeadmConfigTemplate
+metadata:
+  name: bks-worker
+  namespace: default
+spec:
+  template:
+    spec:
+      useExperimentalRetryJoin: true
+      files:
+      - content: ${OPENSTACK_CLOUD_PROVIDER_CONF_B64}
+        encoding: base64
+        owner: root
+        path: /etc/kubernetes/cloud.conf
+        permissions: "0600"
+      - content: Cg==
+        encoding: base64
+        owner: root
+        path: /etc/certs/cacert
+        permissions: "0600"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-config: /etc/kubernetes/cloud.conf
+            cloud-provider: openstack
+          name: '{{ local_hostname }}'
+
+---
+
+apiVersion: v1
+data:
+  cacert: Cg==
+  clouds.yaml: ${OPENSTACK_CLOUD_YAML_B64}
+kind: Secret
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move: "true"
+  name: bks-cloud-config
+  namespace: default
