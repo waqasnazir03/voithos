@@ -4,6 +4,8 @@ import click
 import os
 import voithos.lib.util.util as util
 import voithos.lib.aws.s3 as s3
+import voithos.lib.aws.ses as ses
+import voithos.lib.config as config
 from voithos.constants import S3_DEV_MODE
 from voithos.cli.util.qemu_img import get_qemu_img_group
 from voithos.lib.system import error
@@ -20,7 +22,7 @@ from voithos.lib.system import error
 @click.option("--path", required=True, help="Download path")
 @click.command(name="export-offline-media")
 def export_offline_media(kolla_tag, bw_tag, ceph_release, force, path):
-    """ Download offline installer on specified path"""
+    """Download offline installer on specified path"""
     click.echo("Download offline media at {}".format(path))
     util.verify_create_dirs(path)
     apt_pkg_path = f"{path.rstrip('/')}/apt.tar.gz"
@@ -46,14 +48,14 @@ def export_offline_media(kolla_tag, bw_tag, ceph_release, force, path):
 
 @click.command(name="upload-apt-packages-s3")
 def create_and_upload_apt_tar():
-    """ Create and upload apt tar file on S3"""
+    """Create and upload apt tar file on S3"""
     util.create_and_upload_offline_apt_repo_tar_file()
 
 
 @click.option("--voithos-branch", required=False, default="master", help="git checkout of voithos")
 @click.command(name="upload-voithos-package-s3")
 def create_and_upload_voithos_tar(voithos_branch):
-    """ Package voithos along with its dependencies and upload to s3"""
+    """Package voithos along with its dependencies and upload to s3"""
     util.create_and_upload_offline_voithos_tar_file(voithos_branch)
 
 
@@ -67,24 +69,46 @@ def create_and_upload_voithos_tar(voithos_branch):
 )
 @click.command(name="export-offline-image")
 def export_offline_single_image(name, tag, path, force):
-    """ Download single image at <path>/images/ """
+    """Download single image at <path>/images/"""
     if not os.path.isdir(path):
         echo("Creating base directory: {}".format(path))
         os.mkdir(path)
     util.pull_and_save_single_image(name, tag, path, force)
 
 
+@click.option("--sender", required=True, help="Email Address to send from")
+@click.option(
+    "--to",
+    required=True,
+    help="Recipient email address, can be repeated for multiple recipients",
+    multiple=True,
+)
+@click.option("--subject", required=True, help="Subject for email")
+@click.option("--body", help="Body Text for email in HTML format")
+@click.command(name="ses_alert")
+def send_ses_alert(sender, recipient_email, subject, body):
+    """Send Email Alert via Amazon SES"""
+    # convert tuple to string csv
+    recipient_email_str = ",".join(recipient_email)
+    ses.email_alert(sender, recipient_email_str, subject, body)
+
+
 def get_util_group():
-    """ Return the util group """
+    """Return the util group"""
 
     @click.group(name="util")
     def util_group():
-        """ Voithos utilities """
+        """Voithos utilities"""
 
+    lic_check = config.get_license()
     util_group.add_command(get_qemu_img_group())
     util_group.add_command(export_offline_media)
     util_group.add_command(export_offline_single_image)
     if S3_DEV_MODE:
         util_group.add_command(create_and_upload_apt_tar)
         util_group.add_command(create_and_upload_voithos_tar)
+    if lic_check:
+        util_group.add_command(send_ses_alert)
+    else:
+        return util_group
     return util_group
