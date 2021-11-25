@@ -4,25 +4,13 @@ build-job:
     - echo "Hello, $GITLAB_USER_LOGIN!"
     - apt-get update -y
     - apt-get install -y python3 python3-pip virtualenv
-    - virtualenv --python=python3 env/
-    - source env/bin/activate
+    - virtualenv --python=python3 ~/env/
+    - source ~/env/bin/activate
     - pip install .
-
-test-help:
-  stage: test
-  script:
     - echo "Run voithos help"
     - voithos --help
-
-test-version:
-  stage: test
-  script:
     - echo "Run voithos version"
     - voithos version
-
-package:
-  stage: test
-  script:
     - echo "Package voithos"
     - python setup.py sdist
     - find . | grep voithos.*tar.gz
