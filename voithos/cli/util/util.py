@@ -92,6 +92,10 @@ def send_ses_alert(sender, recipient_email, subject, body):
     recipient_email_str = ",".join(recipient_email)
     ses.email_alert(sender, recipient_email_str, subject, body)
 
+@click.command(name="get-instances-cpu-usage")
+def get_instances_cpu_usage():
+    """Displays cpu utilization of all the VMs on host"""
+    util.get_instances_cpu_usage()
 
 def get_util_group():
     """Return the util group"""
@@ -104,6 +108,7 @@ def get_util_group():
     util_group.add_command(get_qemu_img_group())
     util_group.add_command(export_offline_media)
     util_group.add_command(export_offline_single_image)
+    util_group.add_command(get_instances_cpu_usage)
     if S3_DEV_MODE:
         util_group.add_command(create_and_upload_apt_tar)
         util_group.add_command(create_and_upload_voithos_tar)

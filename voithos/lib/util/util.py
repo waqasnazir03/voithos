@@ -4,15 +4,45 @@ import os
 import pkg_resources
 import sys
 import subprocess
+import psutil
+import re
 import voithos.lib.config as config
 import voithos.lib.aws.ecr as ecr
 import voithos.lib.aws.s3 as s3
+import datetime
 from click import echo
 from pathlib import Path
 from requests.exceptions import ReadTimeout
 from voithos.constants import KOLLA_IMAGE_REPOS, OFFLINE_DEPLOYMENT_SERVER_PACKAGES
 from voithos.lib.system import error, shell
 
+
+def get_instances_cpu_usage():
+    """ Displays cpu utilization of all the server on host"""
+    for proc in psutil.process_iter():
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d-%H-%M-%S")
+        if proc.name() != 'qemu-system-x86_64':
+            continue
+        pid = proc.pid
+        cpu_percent = proc.cpu_percent(interval=0.5)
+        cmd_info = proc.cmdline()
+        instance_uuid = instance_guest_name = ''
+        uuid = [e for e in cmd_info if "uuid=" in e]
+        if uuid:
+            instance_uuid_str = uuid[0]
+            try:
+                instance_uuid = re.search('uuid=(.*),',instance_uuid_str).group(1)
+            except AttributeError:
+                instance_uuid = ''
+        guest_name = [e for e in cmd_info if "guest=" in e]
+        if guest_name:
+            instance_guest_name_str = guest_name[0]
+            try:
+                instance_guest_name = re.search('guest=(.*),',instance_guest_name_str).group(1)
+            except AttributeError:
+                instance_guest_name = ''
+        print(f"{timestamp}\t{pid}\t{instance_uuid}\t\t{instance_guest_name}\t{cpu_percent}")
 
 def verify_create_dirs(path):
     """ Check if path exist and create if it doesn't for offline media"""

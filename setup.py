@@ -26,6 +26,7 @@ setup(
         "gnocchiclient",
         "jinja2",
         "keystoneauth1",
+        "psutil",
         "pylint",
         "pytest",
         "mysql-connector",
